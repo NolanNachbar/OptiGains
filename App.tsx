@@ -1,25 +1,17 @@
 import React from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-  Button,
-} from 'react-native';
-import {Colors} from 'react-native/Libraries/NewAppScreen'; // Import Colors
+import { SafeAreaView, StatusBar, StyleSheet, useColorScheme, View, Button, Text } from 'react-native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { Colors } from 'react-native/Libraries/NewAppScreen';
+import { RootStackParamList } from './types';
 
-function App(): React.JSX.Element {
+type HomeScreenProps = {
+  navigation: StackNavigationProp<RootStackParamList, 'Home'>;
+};
+
+const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const isDarkMode = useColorScheme() === 'dark';
   const backgroundStyle = {
     backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-  };
-
-  const handlePress = (screenName: string) => {
-    console.log(`Navigate to ${screenName}`);
-    // Implement navigation logic here
   };
 
   return (
@@ -28,37 +20,28 @@ function App(): React.JSX.Element {
         barStyle={isDarkMode ? 'light-content' : 'dark-content'}
         backgroundColor={backgroundStyle.backgroundColor}
       />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-            flex: 1,
-            justifyContent: 'center',
-            alignItems: 'center',
-            padding: 20,
-          }}>
-          <Text style={styles.title}>Main Menu</Text>
-          <Button
-            title="Start Workout"
-            onPress={() => handlePress('StartWorkout')}
-          />
-          <Button
-            title="View Progress"
-            onPress={() => handlePress('ViewProgress')}
-          />
-          <Button
-            title="Settings"
-            onPress={() => handlePress('Settings')}
-          />
-        </View>
-      </ScrollView>
+      <View
+        style={[
+          styles.container,
+          { backgroundColor: isDarkMode ? Colors.black : Colors.white },
+        ]}
+      >
+        <Text style={styles.title}>Main Menu</Text>
+        <Button title="Start Workout" onPress={() => navigation.navigate('StartWorkout')} />
+        <Button title="View Progress" onPress={() => navigation.navigate('ViewProgress')} />
+        <Button title="Settings" onPress={() => navigation.navigate('Settings')} />
+      </View>
     </SafeAreaView>
   );
-}
+};
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -66,4 +49,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default App;
+export default HomeScreen;
