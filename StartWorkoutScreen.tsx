@@ -3,13 +3,18 @@ import { View, Text, StyleSheet, FlatList, TextInput, Button, TouchableOpacity, 
 import { useWorkoutContext } from './WorkoutContext';
 import { usePastWorkoutContext } from './PastWorkoutsContext';
 
+interface SetDetails {
+  weight: number;
+  reps: number;
+}
+
 interface Exercise {
   id: string;
   name: string;
   muscle: string;
-  sets: number;
-  reps: number;
+  sets: SetDetails[];
   pr: number;
+  notes: string;
 }
 
 interface Workout {
@@ -24,8 +29,18 @@ const StartWorkoutScreen: React.FC = () => {
   const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
 
   const handleSelectWorkout = (workout: Workout) => {
-    setSelectedWorkout(workout);
+    // Ensure each exercise has sets and notes initialized
+    const initializedWorkout = {
+      ...workout,
+      exercises: workout.exercises.map(exercise => ({
+        ...exercise,
+        sets: exercise.sets || [{ weight: 0, reps: 0 }], // Initialize sets if not present
+        notes: exercise.notes || ''
+      }))
+    };
+    setSelectedWorkout(initializedWorkout);
   };
+  
 
   const handleSavePastWorkout = () => {
     if (selectedWorkout) {
@@ -35,11 +50,29 @@ const StartWorkoutScreen: React.FC = () => {
     }
   };
 
-  const updateExercise = (exerciseId: string, sets: number, reps: number) => {
+  const updateSetDetails = (exerciseId: string, exerciseIndex: number, setIndex: number, field: 'weight' | 'reps', value: number) => {
+    if (!selectedWorkout) return;
+  
+    const updatedExercises = selectedWorkout.exercises.map((exercise, idx) => {
+      if (idx === exerciseIndex) {
+        const updatedSets = exercise.sets.map((set, sIndex) =>
+          sIndex === setIndex ? { ...set, [field]: value } : set
+        );
+        return { ...exercise, sets: updatedSets };
+      }
+      return exercise;
+    });
+  
+    setSelectedWorkout({ ...selectedWorkout, exercises: updatedExercises });
+  };
+  
+  
+
+  const updateExerciseNotes = (exerciseId: string, notes: string) => {
     if (!selectedWorkout) return;
 
     const updatedExercises = selectedWorkout.exercises.map(exercise =>
-      exercise.id === exerciseId ? { ...exercise, sets, reps } : exercise
+      exercise.id === exerciseId ? { ...exercise, notes } : exercise
     );
 
     setSelectedWorkout({ ...selectedWorkout, exercises: updatedExercises });
@@ -53,43 +86,44 @@ const StartWorkoutScreen: React.FC = () => {
     </TouchableOpacity>
   );
 
-  const renderExerciseItem = ({ item }: { item: Exercise }) => (
-    <View style={styles.exerciseItem}>
-      <Text>{item.name} - {item.muscle}</Text>
-      <Text>PR: {item.pr}</Text>
-      <Text>
-        Sets
-      </Text>
-      <TextInput
-        style={styles.input}
-        value={item.sets.toString()}
-        onChangeText={text => updateExercise(item.id, parseInt(text) || 0, item.reps)}
-        keyboardType="numeric"
-        placeholder="Sets"
-      />
-      <Text>
-        Reps
-      </Text>
-      <TextInput
+  const renderSetInput = (exerciseId: string, set: SetDetails, exerciseIndex: number, setIndex: number) => (
+    <View key={setIndex} style={styles.setInput}>
+      <Text>Set {setIndex + 1}</Text>
 
-        style={styles.input}
-        value={item.reps.toString()}
-        onChangeText={text => updateExercise(item.id, item.sets, parseInt(text) || 0)}
-        keyboardType="numeric"
-        placeholder="Reps"
-      />
-      <Text>
-        Weight
-      </Text>
+      <Text> Weight:</Text>
       <TextInput
         style={styles.input}
-        value={item.reps.toString()}
-        onChangeText={text => updateExercise(item.id, item.sets, parseInt(text) || 0)}
+        value={set.weight.toString()}
+        onChangeText={text => updateSetDetails(exerciseId, exerciseIndex, setIndex, 'weight', parseInt(text) || 0)}
         keyboardType="numeric"
         placeholder="Weight"
       />
+      <Text>Reps:</Text>
+      <TextInput
+        style={styles.input}
+        value={set.reps.toString()}
+        onChangeText={text => updateSetDetails(exerciseId, exerciseIndex, setIndex, 'reps', parseInt(text) || 0)}
+        keyboardType="numeric"
+        placeholder="Reps"
+      />
     </View>
   );
+  
+  const renderExerciseItem = ({ item, index }: { item: Exercise, index: number }) => (
+    <View style={styles.exerciseItem}>
+      <Text>{item.name} - {item.muscle}</Text>
+      <Text>PR: {item.pr}</Text>
+      {item.sets.map((set, setIndex) => renderSetInput(item.id, set, index, setIndex))}
+      <Text>Notes:</Text>
+      <TextInput
+        style={styles.notesInput}
+        value={item.notes}
+        onChangeText={text => updateExerciseNotes(item.id, text)}
+        placeholder="Notes"
+      />
+    </View>
+  );
+  
 
   return (
     <View style={styles.container}>
@@ -146,8 +180,21 @@ const styles = StyleSheet.create({
     borderBottomColor: '#ccc',
     width: '100%',
   },
+  setInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 5,
+  },
   input: {
-    width: 50,
+    width: 60,
+    height: 40,
+    borderColor: 'gray',
+    borderWidth: 1,
+    marginHorizontal: 5,
+    paddingHorizontal: 10,
+  },
+  notesInput: {
+    width: '100%',
     height: 40,
     borderColor: 'gray',
     borderWidth: 1,
