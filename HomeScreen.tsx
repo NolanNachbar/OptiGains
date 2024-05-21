@@ -12,6 +12,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
       <Text>This is the Home Screen</Text>
       <Button title="Start Workout" onPress={() => navigation.navigate('StartWorkout')} />
+      <Button title="Create Workout" onPress={() => navigation.navigate('CreateWorkout')} />
       <Button title="View Progress" onPress={() => navigation.navigate('ViewProgress')} />
       <Button title="Settings" onPress={() => navigation.navigate('Settings')} />
     </View>
