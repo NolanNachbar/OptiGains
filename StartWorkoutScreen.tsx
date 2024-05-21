@@ -86,10 +86,32 @@ const StartWorkoutScreen: React.FC = () => {
     </TouchableOpacity>
   );
 
+  const renderExerciseItem = ({ item, index }: { item: Exercise, index: number }) => (
+    <View style={styles.exerciseItem}>
+      <Text>{item.name} - {item.muscle}</Text>
+      <Text>PR: {item.pr}</Text>
+      <TextInput
+        style={styles.input}
+        value={item.sets.length.toString()}
+        onChangeText={(text) => updateNumSets(item.id, parseInt(text))}
+        keyboardType="numeric"
+        placeholder="Number of Sets"
+      />
+      {item.sets.map((set, setIndex) => renderSetInput(item.id, set, index, setIndex))}
+      <Text>Notes:</Text>
+      <TextInput
+        style={styles.notesInput}
+        value={item.notes}
+        onChangeText={text => updateExerciseNotes(item.id, text)}
+        placeholder="Notes"
+      />
+    </View>
+  );
+  
   const renderSetInput = (exerciseId: string, set: SetDetails, exerciseIndex: number, setIndex: number) => (
     <View key={setIndex} style={styles.setInput}>
       <Text>Set {setIndex + 1}</Text>
-
+  
       <Text> Weight:</Text>
       <TextInput
         style={styles.input}
@@ -109,20 +131,16 @@ const StartWorkoutScreen: React.FC = () => {
     </View>
   );
   
-  const renderExerciseItem = ({ item, index }: { item: Exercise, index: number }) => (
-    <View style={styles.exerciseItem}>
-      <Text>{item.name} - {item.muscle}</Text>
-      <Text>PR: {item.pr}</Text>
-      {item.sets.map((set, setIndex) => renderSetInput(item.id, set, index, setIndex))}
-      <Text>Notes:</Text>
-      <TextInput
-        style={styles.notesInput}
-        value={item.notes}
-        onChangeText={text => updateExerciseNotes(item.id, text)}
-        placeholder="Notes"
-      />
-    </View>
-  );
+  const updateNumSets = (exerciseId: string, numSets: number) => {
+    if (!selectedWorkout) return;
+  
+    const updatedExercises = selectedWorkout.exercises.map(exercise =>
+      exercise.id === exerciseId ? { ...exercise, sets: Array.from({ length: numSets }, () => ({ weight: 0, reps: 0 })) } : exercise
+    );
+  
+    setSelectedWorkout({ ...selectedWorkout, exercises: updatedExercises });
+  };
+  
   
 
   return (
