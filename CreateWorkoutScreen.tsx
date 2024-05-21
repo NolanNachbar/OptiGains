@@ -1,7 +1,21 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Modal, TextInput, Button, Alert } from 'react-native';
+import { useWorkoutContext } from './WorkoutContext';
 
-// Sample data for exercises
+interface Exercise {
+  id: string;
+  name: string;
+  muscle: string;
+  sets: string;
+  reps: string;
+}
+
+interface Workout {
+  id: string;
+  name: string;
+  exercises: Exercise[];
+}
+
 let nextId = 3; // Start with the next id after the existing exercises
 const exercisesData = [
   { id: '1', name: 'Squats', muscle: 'Quadriceps', pr: 100 },
@@ -13,16 +27,17 @@ const CreateWorkoutScreen: React.FC = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [newExerciseName, setNewExerciseName] = useState('');
   const [newExerciseMuscle, setNewExerciseMuscle] = useState('');
-  const [selectedExercises, setSelectedExercises] = useState<{ id: string; name: string; muscle: string; sets: string; reps: string }[]>([]);
   const [isAddingNewExercise, setIsAddingNewExercise] = useState(false);
   const [workoutNameModalVisible, setWorkoutNameModalVisible] = useState(false);
   const [workoutName, setWorkoutName] = useState('');
+  const { savedWorkouts, addWorkout } = useWorkoutContext();
+  const [selectedExercises, setSelectedExercisesState] = useState<Exercise[]>([]);
 
   const handleSelectExercise = (exerciseId: string) => {
     setModalVisible(false); // Close the modal after selecting an exercise
     const selectedExercise = exercisesData.find((item) => item.id === exerciseId);
     if (selectedExercise) {
-      setSelectedExercises([...selectedExercises, { id: exerciseId, name: selectedExercise.name, muscle: selectedExercise.muscle, sets: '', reps: '' }]);
+      setSelectedExercisesState([...selectedExercises, { id: exerciseId, name: selectedExercise.name, muscle: selectedExercise.muscle, sets: '', reps: '' }]);
     }
   };
 
@@ -32,15 +47,12 @@ const CreateWorkoutScreen: React.FC = () => {
 
   const handleSaveNewExercise = () => {
     if (newExerciseName.trim() !== '' && newExerciseMuscle.trim() !== '') {
-      // Add the new exercise to the selected exercises list
-      setSelectedExercises([
+      setSelectedExercisesState([
         ...selectedExercises,
         { id: String(nextId++), name: newExerciseName, muscle: newExerciseMuscle, sets: '', reps: '' }
       ]);
-      // Reset the new exercise name and muscle fields
       setNewExerciseName('');
       setNewExerciseMuscle('');
-      // Close the modal
       setIsAddingNewExercise(false);
       setModalVisible(false);
     } else {
@@ -61,11 +73,16 @@ const CreateWorkoutScreen: React.FC = () => {
       Alert.alert('Workout name is required.');
       return;
     }
-    // Here you can save the workout with the entered name and the selected exercises
-    // Reset the workout name and close the modal
+    const workout = {
+      id: String(nextId++),
+      name: workoutName,
+      exercises: selectedExercises,
+    };
+    addWorkout(workout);
     Alert.alert('Workout saved successfully!');
     setWorkoutName('');
     setWorkoutNameModalVisible(false);
+    setSelectedExercisesState([]); // Reset selected exercises after saving
   };
 
   const renderExerciseItem = ({ item }: { item: any }) => (
@@ -78,38 +95,18 @@ const CreateWorkoutScreen: React.FC = () => {
     </TouchableOpacity>
   );
 
-  const renderSelectedExercises = () => {
-    return selectedExercises.map((exercise) => {
-      const selectedExercise = exercisesData.find((item) => item.id === exercise.id);
-      return (
-        <View key={exercise.id} style={styles.selectedExerciseItem}>
-          <Text>{exercise.name}</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Sets"
-            keyboardType="numeric"
-            value={exercise.sets}
-            onChangeText={(text) => updateSetsReps(exercise.id, text, exercise.reps)}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Reps"
-            keyboardType="numeric"
-            value={exercise.reps}
-            onChangeText={(text) => updateSetsReps(exercise.id, exercise.sets, text)}
-          />
-        </View>
-      );
-    });
+  const renderSavedWorkouts = () => {
+    return savedWorkouts.map((workout) => (
+      <Button key={workout.id} title={workout.name} onPress={() => setSelectedExercisesState(workout.exercises)} />
+    ));
   };
 
-  const updateSetsReps = (exerciseId: string, sets: string, reps: string) => {
-    setSelectedExercises((prevState) =>
-      prevState.map((exercise) =>
-        exercise.id === exerciseId ? { ...exercise, sets, reps } : exercise
-      )
-    );
-  };
+  const renderSelectedExerciseItem = ({ item }: { item: Exercise }) => (
+    <View style={styles.selectedExerciseItem}>
+      <Text>{item.name}</Text>
+      <Text>{item.muscle}</Text>
+    </View>
+  );
 
   return (
     <View style={styles.container}>
@@ -117,41 +114,49 @@ const CreateWorkoutScreen: React.FC = () => {
       <Button title="Add Exercise" onPress={() => setModalVisible(true)} />
       <Modal animationType="slide" visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalContainer}>
-          {isAddingNewExercise ? (
+          <Text style={styles.text}>Select Exercise</Text>
+          {!isAddingNewExercise ? (
             <>
-              <Text>New Exercise Name:</Text>
-              <TextInput
-                style={styles.input}
-                value={newExerciseName}
-                onChangeText={setNewExerciseName}
-                placeholder="Enter exercise name"
-              />
-              <Text>New Exercise Muscle:</Text>
-              <TextInput
-                style={styles.input}
-                value={newExerciseMuscle}
-                onChangeText={setNewExerciseMuscle}
-                placeholder="Enter muscle"
-              />
-              <Button title="Save Exercise" onPress={handleSaveNewExercise} />
-            </>
-          ) : (
-            <>
-              <Text>Select Exercise:</Text>
               <FlatList
                 data={exercisesData}
                 renderItem={renderExerciseItem}
                 keyExtractor={(item) => item.id}
               />
               <Button title="Add New Exercise" onPress={handleAddNewExercise} />
+              <Button title="Cancel" onPress={() => setModalVisible(false)} />
+            </>
+          ) : (
+            <>
+              <Text style={styles.text}>New Exercise</Text>
+              <TextInput
+                style={styles.input}
+                value={newExerciseName}
+                onChangeText={setNewExerciseName}
+                placeholder="Exercise Name"
+              />
+              <TextInput
+                style={styles.input}
+                value={newExerciseMuscle}
+                onChangeText={setNewExerciseMuscle}
+                placeholder="Muscle Group"
+              />
+              <Button title="Save Exercise" onPress={handleSaveNewExercise} />
+              <Button title="Cancel" onPress={() => setIsAddingNewExercise(false)} />
             </>
           )}
-          <Button title="Close" onPress={() => setModalVisible(false)} />
         </View>
       </Modal>
       <View style={styles.selectedExercisesContainer}>
         <Text>Selected Exercises:</Text>
-        {renderSelectedExercises()}
+        {selectedExercises.length > 0 ? (
+          <FlatList
+            data={selectedExercises}
+            renderItem={renderSelectedExerciseItem}
+            keyExtractor={(item) => item.id}
+          />
+        ) : (
+          <Text>No exercises selected</Text>
+        )}
       </View>
       <Button title="Save Workout" onPress={handleSaveWorkout} />
       <Modal animationType="slide" visible={workoutNameModalVisible} onRequestClose={() => setWorkoutNameModalVisible(false)}>
@@ -167,6 +172,10 @@ const CreateWorkoutScreen: React.FC = () => {
           <Button title="Cancel" onPress={() => setWorkoutNameModalVisible(false)} />
         </View>
       </Modal>
+      <View style={styles.savedWorkoutsContainer}>
+        <Text>Saved Workouts:</Text>
+        {renderSavedWorkouts()}
+      </View>
     </View>
   );
 };
@@ -176,15 +185,18 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 16,
   },
   text: {
     fontSize: 24,
+    marginBottom: 16,
   },
   modalContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#fff',
+    padding: 16,
   },
   exerciseItem: {
     padding: 10,
@@ -199,6 +211,7 @@ const styles = StyleSheet.create({
   },
   selectedExercisesContainer: {
     marginTop: 20,
+    width: '100%',
   },
   input: {
     width: 200,
@@ -207,6 +220,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginVertical: 10,
     paddingHorizontal: 10,
+  },
+  savedWorkoutsContainer: {
+    marginTop: 20,
+    width: '100%',
   },
 });
 
