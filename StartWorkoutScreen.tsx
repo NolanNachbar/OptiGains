@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TextInput, Button, TouchableOpacity, Alert } from 'react-native';
 import { useWorkoutContext } from './WorkoutContext';
 import { usePastWorkoutContext } from './PastWorkoutsContext';
-import { useNavigation } from '@react-navigation/native'; // Import useNavigation
+import { useNavigation } from '@react-navigation/native';
 
 interface SetDetails {
   weight: number;
@@ -28,7 +28,7 @@ const StartWorkoutScreen: React.FC = () => {
   const { savedWorkouts } = useWorkoutContext();
   const { addPastWorkout } = usePastWorkoutContext();
   const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
-  const navigation = useNavigation(); // Initialize useNavigation
+  const navigation = useNavigation();
 
   const handleSelectWorkout = (workout: Workout) => {
     const initializedWorkout = {
@@ -154,18 +154,13 @@ const StartWorkoutScreen: React.FC = () => {
         </>
       ) : (
         <>
-          {savedWorkouts.length > 0 ? (
-            <FlatList
-              data={savedWorkouts}
-              renderItem={renderWorkoutItem}
-              keyExtractor={(item) => item.id}
-            />
-          ) : (
-            <View style={styles.emptyContainer}>
-              <Text>No saved workouts found.</Text>
-              <Button title="Create New Workout" onPress={() => navigation.navigate('CreateWorkout')} />
-            </View>
-          )}
+          <FlatList
+            data={savedWorkouts}
+            renderItem={renderWorkoutItem}
+            keyExtractor={(item) => item.id}
+            ListEmptyComponent={<Text>No saved workouts found.</Text>}
+          />
+          <Button title="Create New Workout" onPress={() => navigation.navigate('CreateWorkout')} />
         </>
       )}
     </View>
