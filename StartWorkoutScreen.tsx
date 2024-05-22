@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TextInput, Button, TouchableOpacity, Alert } from 'react-native';
 import { useWorkoutContext } from './WorkoutContext';
 import { usePastWorkoutContext } from './PastWorkoutsContext';
+import { useNavigation } from '@react-navigation/native'; // Import useNavigation
 
 interface SetDetails {
   weight: number;
@@ -27,20 +28,19 @@ const StartWorkoutScreen: React.FC = () => {
   const { savedWorkouts } = useWorkoutContext();
   const { addPastWorkout } = usePastWorkoutContext();
   const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
+  const navigation = useNavigation(); // Initialize useNavigation
 
   const handleSelectWorkout = (workout: Workout) => {
-    // Ensure each exercise has sets and notes initialized
     const initializedWorkout = {
       ...workout,
       exercises: workout.exercises.map(exercise => ({
         ...exercise,
-        sets: exercise.sets || [{ weight: 0, reps: 0 }], // Initialize sets if not present
+        sets: exercise.sets || [{ weight: 0, reps: 0 }],
         notes: exercise.notes || ''
       }))
     };
     setSelectedWorkout(initializedWorkout);
   };
-  
 
   const handleSavePastWorkout = () => {
     if (selectedWorkout) {
@@ -52,7 +52,7 @@ const StartWorkoutScreen: React.FC = () => {
 
   const updateSetDetails = (exerciseId: string, exerciseIndex: number, setIndex: number, field: 'weight' | 'reps', value: number) => {
     if (!selectedWorkout) return;
-  
+
     const updatedExercises = selectedWorkout.exercises.map((exercise, idx) => {
       if (idx === exerciseIndex) {
         const updatedSets = exercise.sets.map((set, sIndex) =>
@@ -62,11 +62,9 @@ const StartWorkoutScreen: React.FC = () => {
       }
       return exercise;
     });
-  
+
     setSelectedWorkout({ ...selectedWorkout, exercises: updatedExercises });
   };
-  
-  
 
   const updateExerciseNotes = (exerciseId: string, notes: string) => {
     if (!selectedWorkout) return;
@@ -107,11 +105,10 @@ const StartWorkoutScreen: React.FC = () => {
       />
     </View>
   );
-  
+
   const renderSetInput = (exerciseId: string, set: SetDetails, exerciseIndex: number, setIndex: number) => (
     <View key={setIndex} style={styles.setInput}>
       <Text>Set {setIndex + 1}</Text>
-  
       <Text> Weight:</Text>
       <TextInput
         style={styles.input}
@@ -130,18 +127,16 @@ const StartWorkoutScreen: React.FC = () => {
       />
     </View>
   );
-  
+
   const updateNumSets = (exerciseId: string, numSets: number) => {
     if (!selectedWorkout) return;
-  
+
     const updatedExercises = selectedWorkout.exercises.map(exercise =>
       exercise.id === exerciseId ? { ...exercise, sets: Array.from({ length: numSets }, () => ({ weight: 0, reps: 0 })) } : exercise
     );
-  
+
     setSelectedWorkout({ ...selectedWorkout, exercises: updatedExercises });
   };
-  
-  
 
   return (
     <View style={styles.container}>
@@ -158,11 +153,20 @@ const StartWorkoutScreen: React.FC = () => {
           <Button title="Back to Workouts" onPress={() => setSelectedWorkout(null)} />
         </>
       ) : (
-        <FlatList
-          data={savedWorkouts}
-          renderItem={renderWorkoutItem}
-          keyExtractor={(item) => item.id}
-        />
+        <>
+          {savedWorkouts.length > 0 ? (
+            <FlatList
+              data={savedWorkouts}
+              renderItem={renderWorkoutItem}
+              keyExtractor={(item) => item.id}
+            />
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Text>No saved workouts found.</Text>
+              <Button title="Create New Workout" onPress={() => navigation.navigate('CreateWorkout')} />
+            </View>
+          )}
+        </>
       )}
     </View>
   );
@@ -218,6 +222,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginVertical: 5,
     paddingHorizontal: 10,
+  },
+  emptyContainer: {
+    alignItems: 'center',
   },
 });
 
