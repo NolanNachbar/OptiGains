@@ -22,6 +22,9 @@ interface Workout {
   id: string;
   name: string;
   exercises: Exercise[];
+  startTime?: Date;
+  endTime?: Date;
+  duration?: number;
 }
 
 const StartWorkoutScreen: React.FC = () => {
@@ -37,14 +40,24 @@ const StartWorkoutScreen: React.FC = () => {
         ...exercise,
         sets: exercise.sets || [{ weight: 0, reps: 0 }],
         notes: exercise.notes || ''
-      }))
+      })),
+      startTime: new Date() // Set start time when workout is selected
     };
     setSelectedWorkout(initializedWorkout);
   };
 
   const handleSavePastWorkout = () => {
     if (selectedWorkout) {
-      addPastWorkout(selectedWorkout);
+      const endTime = new Date();
+      const duration = endTime.getTime() - selectedWorkout.startTime!.getTime(); // Calculate duration
+
+      const workoutToSave = {
+        ...selectedWorkout,
+        endTime,
+        duration
+      };
+
+      addPastWorkout(workoutToSave);
       Alert.alert('Workout saved to history!');
       setSelectedWorkout(null);
     }
